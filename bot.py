@@ -1,64 +1,49 @@
 import discord
+from discord import *
 import re
-import json
-from discord.ext import commands
 import main
 
-
-intent = discord.Intents.all()
-bot = commands.Bot(command_prefix='.', intents=intent)
-
+bot = discord.Bot()
+time_pattern = r"^\d:\d{2}:\d{3}$"
 
 @bot.event
 async def on_ready():
     print(f'We have logged in as {bot.user}')
 
-@bot.command()
-async def help(ctx):
-    message = "add: Adds your time to a specified track! \n leaderboard: Checks the leaderboard for a given track!"
-    await ctx.send(message)
+@bot.command(description="Test") 
+async def ping(ctx):
+    await ctx.respond(f"Pong! {bot.latency}")
 
-@bot.command()
-async def add(ctx):
-        
-    def check(m):
-        return m.author == ctx.author and m.channel == ctx.channel  # Ensures only the message author is considered
-    
-    await ctx.send("What course would you like to add?")
-    try:
-        course_msg = await bot.wait_for("message", check=check, timeout=30.0)  # Wait for course name
-    except TimeoutError:
-        await ctx.send("Timed out! Please try again.")
+@bot.slash_command()
+async def register(ctx: discord.ApplicationContext,
+        name: Option(str, "What's your name?")
+        ):
+    await ctx.respond(name)
+
+@bot.slash_command()
+async def add_track(ctx: discord.ApplicationContext,
+        track: Option(str, "Select the track", 
+        # choices=main.getTracks()
+        ),
+        time: Option(str, "Enter your time (1:23:456)")
+        ):
+    track = main.translateTrack(track)
+    if not main.checkTracks(track):
+        await ctx.send(f"Invalid Name: {track}")
         return
-
-    course_name = course_msg.content
-    course_name = main.translateTrack(course_name)
-    if not main.checkTracks(course_name):
-        await ctx.send(f"Invalid Name: {course_name}")
-        return
-
-
-    await ctx.send("What time? (X:XX:XXX)")
-    
-    time_pattern = r"^\d:\d{2}:\d{3}$"
-    
-    try:
-        time_msg = await bot.wait_for("message", check=check, timeout=30.0)  # Wait for time input
-    except TimeoutError:
-        await ctx.send("Timed out! Please try again.")
-        return
-
-    course_time = time_msg.content
-    
-    if re.match(time_pattern, course_time):
-        main.addTime(ctx.author, course_name, course_time)
-        await ctx.send(f"Done! Added `{course_name}` with time `{course_time}`.")
+    if re.match(time_pattern, time):
+        main.addTime(ctx.author, track, time)
+        await ctx.send(f"Done! Added `{track}` with time `{time}`.")
     else:
-        await ctx.send(f"Improper time: {course_time}")
-        
-@bot.command()
-async def leaderboard(ctx, *, m: str):
-    m = main.translateTrack(m)
+        await ctx.send(f"Improper time: {time}")
+    
+@bot.slash_command()
+async def display_track(ctx: discord.ApplicationContext,
+        track: Option(str, "Select the track", 
+                    #   choices=main.getTracks
+                    )
+        ):
+    m = main.translateTrack(track)
     if main.checkTracks(m):  # Check if track name is valid
         leaderboard_data = main.leaderboard(m)
         if leaderboard_data:  # If there are results
@@ -68,19 +53,49 @@ async def leaderboard(ctx, *, m: str):
                 await ctx.send(f"🏆 **Leaderboard for {m}** 🏁\n{formatted_leaderboard}")
         else:
             await ctx.send(f"No times recorded for {m}.")
-
     else:
         await ctx.send(f"❌ Invalid Track Name: `{m}`")
-        
-@bot.command()
-async def stats(ctx):
+
+@bot.slash_command()
+async def display_user(ctx: discord.ApplicationContext):
     player_stats = main.playerStats(ctx.author)
     if player_stats:
         formatted_stats = "\n".join(
             [f"{entry[2]} - {entry[3]}" for rank, entry in enumerate(player_stats)]
         )
-        await ctx.send(f" **Statistics for {ctx.author.name}** \n{formatted_stats}")
+        await ctx.send(f" **Tracks for {ctx.author.name}** \n{formatted_stats}")
     else:
         await ctx.send(f"No times recorded for {ctx.author.name}")
+
+@bot.slash_command()
+async def add_minimum(ctx: discord.ApplicationContext,
+        track: Option(str, 
+        "Select the track", 
+        # choices=main.getTracks
+        ),
+        time: Option(str, "Enter your time (1:23:456)")
+        ):
+    track = main.translateTrack(track)
+    if not main.checkTracks(track):
+        await ctx.send(f"Invalid Name: {track}")
+        return
+    if re.match(time_pattern, time):
+        main.addTime("Minimum", track, time)
+        await ctx.send(f"Done! Added `{track}` with time `{time}`.")
+    else:
+        await ctx.send(f"Improper time: {time}")
+
+@bot.slash_command()
+async def clear_minimum(ctx: discord.ApplicationContext,
+        track: Option(str, "Select the track", 
+        # choices=main.getTracks
+        ),                
+        ):
+    track = main.translateTrack(track)
+    if not main.checkTracks(track):
+        await ctx.send(f"Invalid Name: {track}")
+        return
+    main.removeMin(track)
+    await ctx.respond(f"Successfully removed {track}")
 
 bot.run("")

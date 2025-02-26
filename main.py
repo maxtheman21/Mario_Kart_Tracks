@@ -25,11 +25,27 @@ def addTime(username, track, time): # Grab player's last time (if any) and compa
     cursor = db.cursor()
     cursor.execute("INSERT INTO Tracks (Username, Track_Title, time) VALUES (?, ?, ?)", (username.name, track, time))
     db.commit()
+    cursor.execute('''SELECT * FROM Tracks WHERE Track_Title = ? AND Username = ? ORDER BY time DESC ''', (track, username.name))
+    results = cursor.fetchall()
+    if len(results) > 1:
+        shortest = (0, 'was', 'was', '9:00:000')
+        for i in results:
+            if i[3] < shortest[3]:
+                shortest = i
+        print(shortest)
+        cursor.execute("DELETE FROM Tracks WHERE Username = ?", (username.name,))
+        cursor.execute("INSERT INTO Tracks (Username, Track_Title, time) VALUES (?, ?, ?)", (shortest[1], shortest[2], shortest[3]))
+    db.commit()
     db.close()
     return True
-    
-    
-    
+
+def removeMin(track):
+    db = sqlite3.connect('Mariokart.db')
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM Tracks WHERE Username = ? AND Track_Title = ?", ("Minimum", track))
+    db.commit()
+    db.close()
+        
 def leaderboard(track):
     db = sqlite3.connect('Mariokart.db')
     cursor = db.cursor()
@@ -39,7 +55,6 @@ def leaderboard(track):
                    ORDER BY time DESC
                    LIMIT 5
                    ''', (track,))
-    
     results = cursor.fetchall()
     db.close()
     return results
@@ -164,3 +179,107 @@ def checkTracks(track):
         return True
     return False    
 
+def getTracks():
+    tracks = [
+        "Amsterdam Drift",
+        "Animal Crossing",
+        "Athens Dash",
+        "Baby Park",
+        "Bangkok Rush",
+        "Berlin Byways",
+        "Big Blue",
+        "Bone-Dry Dunes",
+        "Boo Lake",
+        "Bowser Castle 3 (SNES)",
+        "Bowser's Castle (Wii U)",
+        "Cheep Cheep Beach"
+        "Cheese Land"
+        "Choco Mountain"
+        "City Tracks",
+        "Cloudtop Cruise",
+        "Coconut Mall",
+        "Daisy Circuit",
+        "Daisy Cruiser",
+        "DK Jungle",
+        "DK Mountain",
+        "DK Summit",
+        "Dolphin Shoals",
+        "Donut Plains 3",
+        "Dragon Driftway",
+        "Dry Dry Desert",
+        "Electrodrome",
+        "Excitebike Arena",
+        "Grumble Volcano",
+        "Hyrule Circuit",
+        "Ice Ice Outpost",
+        "Kalimari Desert",
+        "Koopa Cape",
+        "London Loop",
+        "Los Angeles Laps",
+        "Madrid Drive",
+        "Maple Treeway",
+        "Mario Circuit",
+        "Mario Circuit (DS)",
+        "Mario Circuit (GBA)",
+        "Mario Circuit (Wii U)",
+        "Mario Circuit 3",
+        "Mario Kart Stadium",
+        "Merry Mountain",
+        "Moo Moo Meadows",
+        "Moonview Highway",
+        "Mount Wario",
+        "Mushroom Gorge",
+        "Music Park",
+        "Mute City",
+        "Neo Bowser City",
+        "New York Minute",
+        "Ninja Hideaway",
+        "Paris Promenade",
+        "Peach Gardens",
+        "Piranha Plant Cove",
+        "Piranha Plant Slide",
+        "Rainbow Road (3DS)",
+        "Rainbow Road (N64)",
+        "Rainbow Road (SNES)",
+        "Rainbow Road (Wii U)",
+        "Rainbow Road (Wii)",
+        "Ribbon Road",
+        "Riverside Park",
+        "Rock Rock Mountain",
+        "Rome Avanti",
+        "Rosalina's Ice World",
+        "Royal Raceway",
+        "Sherbet Land (GCN)",
+        "Shroom Ridge",
+        "Shy Guy Falls",
+        "Singapore Speedway",
+        "Sky Garden",
+        "Sky-High Sundae",
+        "Snow Land",
+        "Squeaky Clean Sprint",
+        "Sunset Wilds",
+        "Sunshine Airport",
+        "Super Bell Subway",
+        "Sweet Sweet Canyon",
+        "Sydney Sprint",
+        "Thwomp Ruins",
+        "Tick-Tock Clock",
+        "Toad Circuit",
+        "Toad Harbor",
+        "Toad's Turnpike",
+        "Tokyo Blur",
+        "Twisted Mansion",
+        "Vancouver Velocity",
+        "Waluigi Pinball",
+        "Waluigi Stadium (GCN)",
+        "Wario Stadium (DS)",
+        "Wario's Gold Mine",
+        "Water Park",
+        "Wild Woods",
+        "Yoshi Circuit",
+        "Yoshi Valley",
+        "Yoshi's Island"]
+    return tracks
+
+def addTracks(track):
+    preferredtracks.append(track)
